@@ -1,8 +1,6 @@
-# Probabilistic-Robotics-Sapienza
+# Planar monocular SLAM project for Sapienza
 Project for the Probabilistic project course at Sapienza
-# Project Title
 
-Simple overview of use/purpose.
 
 ## Description
 
