@@ -30,6 +30,10 @@ After the previous command is finished the in variables.mat the landmarks are sa
 ```
 octave BA.m
 ```
+Then to plot the real landmarks against the blue landmarks use
+```
+octave Plot_figures.m
+```
 
 
 
