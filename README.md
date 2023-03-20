@@ -13,6 +13,8 @@ Given a trajectory with 200 poses and 1000 landmarks to be observed the task is 
 On PC terminal: 
 ```
 git clone https://github.com/lapocarrieri/Probabilistic-Robotics-Sapienza
+cd Probabilistic-Robotics-Sapienza
+unzip dataset_for_one_person.zip   
 ```
 
 ### Installing
