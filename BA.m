@@ -2,7 +2,7 @@
 source "./ba_utils.m"
 
 
-l=loadworld("/home/lapo/ProbRobLapo/dataset_for_one_person/world.dat");
+l=loadworld("dataset_for_one_person/world.dat");
 
 K = camera.camera_matrix
 
@@ -29,7 +29,7 @@ num_poses = 200;
 
 # compute associations on those landmarks
 
-t=loadtrajectory("/home/lapo/ProbRobLapo/dataset_for_one_person/trajectoy.dat");
+t=loadtrajectory("dataset_for_one_person/trajectoy.dat");
 load("variables.mat","x_world");
 
 
@@ -66,18 +66,17 @@ num_inliers=zeros(1,num_iterations);
     Z = zeros(2,0);
 system_size=pose_dim*num_poses+landmark_dim*num_landmarks;
 for (iteration=1:num_iterations)
-  printf("iteration %d\n",iteration)
+  printf("iteration number %d\n",iteration)
   H=zeros(system_size, system_size);
   b=zeros(system_size,1);
   chi_stats(iteration)=0;
       for pose = 0:199
-        printf("pose %d\n",pose)
         k=num2str(pose,'%05.f');
         pose=pose+1;
         T1 = inv(camera.cam_transform);
         T2 = inv([cos(t(pose).odometryPose(3)) -sin(t(pose).odometryPose(3)) 0 t(pose).odometryPose(1); sin(t(pose).odometryPose(3)) cos(t(pose).odometryPose(3))  0 t(pose).odometryPose(2); 0 0 1 0; 0 0 0 1]);
         T=T1*T2;%trasformation from world to camera
-        filename = strcat("/home/lapo/ProbRobLapo/dataset_for_one_person/meas-", k,  '.dat');
+        filename = strcat("dataset_for_one_person/meas-", k,  '.dat');
         observations_t=loadmeas(filename);
         for j = 1: length(observations_t)
 
@@ -88,7 +87,7 @@ for (iteration=1:num_iterations)
            endif
            Xl = [l(observations_t(j).observation.id).x_pose;l(observations_t(j).observation.id).y_pose;l(observations_t(j).observation.id).z_pose];
           [is_behind, e,Jr,Jl] = errorAndJacobian(Xr, Xl, z, K);
-          
+
           if (is_behind)
             continue;
           endif
@@ -138,12 +137,12 @@ for (iteration=1:num_iterations)
       % of the 1st pose, while solving the system
   
       dx(pose_dim+1:end)=-(H(pose_dim+1:end,pose_dim+1:end)\b(pose_dim+1:end,1));
-      [XR_guess, XL_guess]=boxPlus(XR_guess,XL_guess,num_poses, num_landmarks, dx);
+      [XR_guess, XL_guess]=boxPlus(XR_guess,XL_guess,num_poses, num_landmarks, dx)
 
 endfor
 
 sum_sq_errors1 = 0;
-sum_sq_errors2 = 0  ;
+sum_sq_errors2 = 0;
   for pose = 0:198
     k=num2str(pose,'%05.f');
     pose=pose+2;
