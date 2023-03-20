@@ -9,7 +9,7 @@ K = camera.camera_matrix
 
 %load('variables.mat',x_world)
 xi=0.1;
-num_iterations = 10;
+num_iterations = 3;
 damping = 0.1;
 num_landmarks = 999;
 num_poses = 200;
