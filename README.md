@@ -17,7 +17,7 @@ git clone https://github.com/lapocarrieri/Probabilistic-Robotics-Sapienza
 
 ### Installing
 
-Install the dataset unzipping 03-PlanarMonocularSLAM(3).zip
+Install the dataset unzipping 09-PlanarMonocularSlam_one_person/dataset_for_one_person inside the actual folder
 
 ### Executing program
 
