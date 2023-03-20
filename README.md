@@ -23,12 +23,12 @@ Install the dataset unzipping 09-PlanarMonocularSlam_one_person/dataset_for_one_
 
 ### Executing program
 
-Firstly run TriangulationLapo in order to triangulate the position of the landmarks using the Pseudoinverse
+Firstly run TriangulationLapo in order to triangulate the position of the landmarks using the Pseudoinverse ( it takes 30 minutes so if you want to see the Bundle Adjustment it is possible to skip this part since the landmarks are already stored in variables.mat in the variable x_world) 
 ```
 octave TriangulationLapo.m
 ```
 
-After the previous command is finished the in variables.mat the landmarks are saved in x_world, now it is possible to run Bundle Adjustment
+After the previous command is finished it is possible to run Bundle Adjustment ( it is possible to change num_iterations in order to increase the performances of the system)
 ```
 octave BA.m
 ```
