@@ -23,19 +23,35 @@ Install the dataset unzipping 09-PlanarMonocularSlam_one_person/dataset_for_one_
 
 ### Executing program
 
-Firstly run TriangulationLapo in order to triangulate the position of the landmarks using the Pseudoinverse ( it takes 30 minutes so if you want to see the Bundle Adjustment it is possible to skip this part since the landmarks are already stored in variables.mat in the variable x_world) 
+Firstly run Triangulation2 in order to triangulate the positions  using the triangulation between two points using the function present in Tools. in order to use multiplu points in Triangulation.m  the Pseudoinverse is used ( but it takes hours and it is not precise).
+If you want to see the Bundle Adjustment it is possible to skip this part since the landmarks are already stored in variables2.mat in the variable x_world.
+ Uncommenting the line 105 it is possible to see that the triangulation is perfectly matched if the ground truthposition is considered.
 ```
-octave TriangulationLapo.m
+octave Triangulation2.m
 ```
 
 After the previous command is finished it is possible to run Bundle Adjustment ( it is possible to change num_iterations in order to increase the performances of the system)
 ```
 octave BA.m
 ```
+
 Then to plot the real landmarks against the blue landmarks use
 ```
-octave Plot_figures.m
+octave plot_figures.m
 ```
+Finally to plot the real landmarks against the blue landmarks use
+```
+octave PlotTrajectory.m
+```
+
+### Results
+
+
+
+### Future improvements
+
+A way to simply improve the system is triangulate the points using more than two points, this require much time computing but, since in the project the triangulation is done between two subsequent point is not so precise in respect to 2 far positions.
+
 
 
 
