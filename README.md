@@ -46,6 +46,8 @@ octave PlotTrajectory.m
 
 ### Results
 
+The results are not particularly interesting since the error is still evident after some iterations. Anyway the problem is the triangulated points that are not very precise due to the error in the odometry. Making the BA using real landamrks gives error 0 so improving the initialization it will be possible to improve the system.
+![image](https://user-images.githubusercontent.com/56505429/235121047-fa3f8e6c-34a7-4753-8359-b106d2709a39.png)
 
 
 ### Future improvements
