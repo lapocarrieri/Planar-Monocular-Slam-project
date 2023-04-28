@@ -33,7 +33,7 @@ K = camera.camera_matrix;
 
 #Hyperparameters that can be changed
 xi=0.1;
-num_iterations = 2
+num_iterations = 1
 damping = 0.1;
 kernel_threshold = 10.0;
 #parameters and initializations
@@ -86,8 +86,8 @@ for (iteration=1:num_iterations)
         T1 = inv(camera.cam_transform); %transform from robot to camera frame
 
         % position of the robot in respect to the world that is inverted in order to transform from world frame to robot frame
-        %T2 = inv([cos(t(pose).GroundTruthPose(3)) -sin(t(pose).GroundTruthPose(3)) 0 t(pose).GroundTruthPose(1); sin(t(pose).GroundTruthPose(3)) cos(t(pose).GroundTruthPose(3))  0 t(pose).GroundTruthPose(2); 0 0 1 0; 0 0 0 1]);
-        T2 = inv([cos(t(pose).odometryPose(3)) -sin(t(pose).odometryPose(3)) 0 t(pose).odometryPose(1); sin(t(pose).odometryPose(3)) cos(t(pose).odometryPose(3))  0 t(pose).odometryPose(2); 0 0 1 0; 0 0 0 1]);
+        T2 = inv([cos(t(pose).GroundTruthPose(3)) -sin(t(pose).GroundTruthPose(3)) 0 t(pose).GroundTruthPose(1); sin(t(pose).GroundTruthPose(3)) cos(t(pose).GroundTruthPose(3))  0 t(pose).GroundTruthPose(2); 0 0 1 0; 0 0 0 1]);
+        %T2 = inv([cos(t(pose).odometryPose(3)) -sin(t(pose).odometryPose(3)) 0 t(pose).odometryPose(1); sin(t(pose).odometryPose(3)) cos(t(pose).odometryPose(3))  0 t(pose).odometryPose(2); 0 0 1 0; 0 0 0 1]);
         
         T=T1*T2;%trasformation from world to camera
 
@@ -105,8 +105,8 @@ for (iteration=1:num_iterations)
            if(observations_t(j).observation.id == 0);
             continue;
           endif  
-          %Xl = [l(observations_t(j).observation.id+1).x_pose,l(observations_t(j).observation.id+1).y_pose,l(observations_t(j).observation.id+1).z_pose];
-          Xl = [XL_guess(1,observations_t(j).observation.id),XL_guess(2,observations_t(j).observation.id),XL_guess(3,observations_t(j).observation.id)];
+          Xl = [l(observations_t(j).observation.id+1).x_pose,l(observations_t(j).observation.id+1).y_pose,l(observations_t(j).observation.id+1).z_pose];
+          %Xl = [XL_guess(1,observations_t(j).observation.id),XL_guess(2,observations_t(j).observation.id),XL_guess(3,observations_t(j).observation.id)];
           Xl=transpose(Xl);
           
           %fclose(fid)
