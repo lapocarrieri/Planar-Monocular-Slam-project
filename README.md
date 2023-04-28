@@ -39,10 +39,15 @@ Then to plot the real landmarks against the blue landmarks use
 ```
 octave plot_figures.m
 ```
+![Landmarks](https://user-images.githubusercontent.com/56505429/235121793-fb2d52df-384f-435b-94b9-37afcb73fbb9.png)
+
+
 Finally to plot the real landmarks against the blue landmarks use
 ```
 octave PlotTrajectory.m
 ```
+![Trajectory](https://user-images.githubusercontent.com/56505429/235121749-c354a0cf-f4bf-447a-8f70-62ad11f7100a.png)
+
 
 ### Results
 
