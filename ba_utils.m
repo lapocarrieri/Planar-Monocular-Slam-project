@@ -1,11 +1,13 @@
+# camera datas
+
 camera.camera_matrix = [180 0 320;0 180 240; 0 0 1];
 camera.inverse_camera_matrix = inv(camera.camera_matrix);
 camera.cam_transform =   [0   0   1 0.2; -1   0   0   0;  0  -1   0   0;  0   0   0   1];
-camera. z_near = 0;
+camera.z_near = 0;
 camera.z_far = 5;
 camera.width = 640;
 camera.height = 480;
-camera
+camera;
 #rotation matrix around x axis
 function R=Rx(rot_x)
   c=cos(rot_x);
@@ -240,6 +242,7 @@ global pose_dim=6;
 global landmark_dim=3;
 
 
+# POSEMATRIXINDEX
 # retrieves the index in the perturbation vector, that corresponds to
 # a certain pose
 # input:
@@ -261,6 +264,7 @@ function v_idx=poseMatrixIndex(pose_index, num_poses, num_landmarks)
   v_idx=1+(pose_index-1)*pose_dim;
 endfunction;
 
+#LANDMARKMATRIXINDEX
 
 # retrieves the index in the perturbation vector, that corresponds to
 # a certain landmark
@@ -282,6 +286,8 @@ function v_idx=landmarkMatrixIndex(landmark_index, num_poses, num_landmarks)
   v_idx=1 + (num_poses)*pose_dim + (landmark_index-1) * landmark_dim;
 endfunction;
 
+# PROJECT A 3D LANDMARK IN THE CAMERA FRAME AND THAN TRANSFORM IT IN CAMERA COORDINATES
+
 function [is_behind, z_hat] = project(Xr, Xl, K)
   p_camera_frame = Xr(1:3,1:3) * Xl + Xr(1:3,4);
   p_projected = K * p_camera_frame;
@@ -291,7 +297,18 @@ function [is_behind, z_hat] = project(Xr, Xl, K)
     z_hat = p_projected(1:2)/p_projected(3);
     is_behind = false;
   endif
+  if (z_hat(1)>640)%camera.width)
+    z_hat(1)=640;%camera.width;
+ endif
+ if (z_hat(2)>480)%camera.height)
+    z_hat(2)=480;%camera.height;
+  endif  
+  if(p_camera_frame(3)<0 || p_camera_frame(3)>5);
+    is_behind = true;
+    endif   
 endfunction
+
+
 
 
 
@@ -307,7 +324,7 @@ endfunction
 #       pose
 #   Jl: 2x3 derivative w.r.t a the error and a perturbation on the
 #       landmark
-function [is_behind,e,Jr,Jl]=errorAndJacobian(Xr, Xl, z, K)
+function [is_behind,e,Jr,Jl,z_hat]=errorAndJacobian(Xr, Xl, z, K)
    R=Xr(1:3,1:3);
    t=Xr(1:3,4);
    [is_behind,z_hat]=project(Xr,Xl,K); #prediction
@@ -317,8 +334,10 @@ function [is_behind,e,Jr,Jl]=errorAndJacobian(Xr, Xl, z, K)
    if (is_behind)
     return
    endif
+
    p_camera_frame = R * Xl + t;
    p_projected = K * p_camera_frame;
+ 
    e=z_hat-z;
    Jr=zeros(2,6);
    Jl=zeros(2,3);
@@ -383,109 +402,10 @@ endfunction;
 #   XL: the landmarks after optimization
 #   chi_stats: array 1:num_iterations, containing evolution of chi2
 #   num_inliers: array 1:num_iterations, containing evolution of inliers
-function [XR, XL, chi_stats, num_inliers]=doBundleAdjustment(XR, XL, Z, K,
-							associations, 
-							num_poses, 
-							num_landmarks, 
-							num_iterations, 
-							damping, 
-							kernel_threshold)
-  global pose_dim;
-  global landmark_dim;
 
-  chi_stats=zeros(1,num_iterations);
-  num_inliers=zeros(1,num_iterations);
-  # size of the linear system
-  system_size=pose_dim*num_poses+landmark_dim*num_landmarks; 
-  for (iteration=1:num_iterations)
-    H=zeros(system_size, system_size);
-    b=zeros(system_size,1);
-    chi_stats(iteration)=0;
-    for (measurement_num=1:size(Z,2))
-      pose_index=associations(1,measurement_num);
-      landmark_index=associations(2,measurement_num);
-      z=Z(:,measurement_num);
-      Xr=XR(:,:,pose_index);
-      Xl=XL(:,landmark_index);
-      [is_behind, e,Jr,Jl] = errorAndJacobian(Xr, Xl, z, K);
-      if (is_behind)
-        continue;
-      endif
-      chi=e'*e;
-      # apply the robust kernel as a weight to the linear system
-      w = 1;
-      if (chi>kernel_threshold)
-      	w = 1/kernel_threshold;
-      	chi=kernel_threshold;
-      else
-      	num_inliers(iteration)++;
-      endif;
-      chi_stats(iteration)+=chi;
-    
-      omega = w * eye(2);
-      Hrr = Jr' * omega * Jr;
-      Hrl = Jr' * omega * Jl;
-      Hll = Jl' * omega * Jl;
-      br = Jr' * omega * e;
-      bl = Jl' * omega * e;
 
-      pose_matrix_index=poseMatrixIndex(pose_index, num_poses, num_landmarks);
-      landmark_matrix_index=landmarkMatrixIndex(landmark_index, num_poses, num_landmarks);
 
-      H(pose_matrix_index:pose_matrix_index+pose_dim-1,
-	pose_matrix_index:pose_matrix_index+pose_dim-1)+=Hrr;
-
-      H(pose_matrix_index:pose_matrix_index+pose_dim-1,
-	landmark_matrix_index:landmark_matrix_index+landmark_dim-1)+=Hrl;
-
-      H(landmark_matrix_index:landmark_matrix_index+landmark_dim-1,
-	landmark_matrix_index:landmark_matrix_index+landmark_dim-1)+=Hll;
-
-      H(landmark_matrix_index:landmark_matrix_index+landmark_dim-1,
-	pose_matrix_index:pose_matrix_index+pose_dim-1)+=Hrl';
-
-      b(pose_matrix_index:pose_matrix_index+pose_dim-1)+=br;
-      b(landmark_matrix_index:landmark_matrix_index+landmark_dim-1)+=bl;
-
-    endfor
-    size_H=size(H,1)
-    rank_H=rank(H)
-    H+=eye(system_size)*damping;
-    dx=zeros(system_size,1);
-    
-    % we solve the linear system, blocking the first pose
-    % this corresponds to "remove" from H and b the locks
-    % of the 1st pose, while solving the system
-
-    dx(pose_dim+1:end)=-(H(pose_dim+1:end,pose_dim+1:end)\b(pose_dim+1:end,1));
-    [XR, XL]=boxPlus(XR,XL,num_poses, num_landmarks, dx);
-  endfor
-
-  % visualize the sparsity pattern of the approximate hessian
-  visual_H = ones(system_size,system_size);
-  for r=1:system_size
-    for c=1:system_size
-      if(abs(H(r,c)) > 0)
-        visual_H(r,c) = 0;
-      endif
-    endfor
-  endfor
-  imshow(visual_H)
-endfunction
-
-function i = plotState(XL, XL_guess, XL_gt)
-#plot landmarks
-hold on;
-plot3(XL(1,:),XL(2,:),XL(3,:),'b*',"linewidth",2);
-hold on;
-plot3(XL_guess(1,:),XL_guess(2,:),XL_guess(3,:),'ro',"linewidth",2);
-hold on;
-plot3(XL_gt(1,:),XL_gt(2,:),XL_gt(3,:),'g*',"linewidth",2);
-hold on;
-legend("estimate","initial guess","ground truth")
-i = 1;
-endfunction
-function out = landmarkss(varargin)
+function out = landmarks3D(varargin)
   %There is always an id
   out.id = varargin{1}; %id
   Nvarargin = length(varargin);
@@ -509,10 +429,10 @@ function out = extractLandmark(elements)
   x_pose = str2double(elements{2});
   y_pose = str2double(elements{3});
   z_pose = str2double(elements{4});
-  out = landmarkss(id,[x_pose,y_pose,z_pose]);
+  out = landmarks3D(id,[x_pose,y_pose,z_pose]);
 end
 
-
+# Load all the landmarks in a vector landmarks
 
 function [landmarks] = loadworld(filepath)
     fid = fopen(filepath, 'r');
@@ -536,92 +456,9 @@ function [landmarks] = loadworld(filepath)
 	    i_vert_xy = i_vert_xy + 1;
 
     end
-
-end
-function out = landmark(varargin)
-  %There is always an id
-  out.id = varargin{1}; %id
-  Nvarargin = length(varargin);
-  %if we call the fx with 3 argument, we are populating
-  %the landmark absolute position structures.
-  if(Nvarargin == 2)
-    var2 = varargin{2};
-    if(length(var2) == 1)
-      out.bearing = var2; %bearing only
-    end
-    if(length(var2) == 2)
-    out.x_pose = var2(1); %x-pose
-    out.y_pose = var2(2); %y-pose
-    end
-  end  
-
-end
-function out = observation(from_id, land_id, obs)
-  out.pose_id = from_id;
-  out.observation = landmark(land_id, obs);
-end
-function out = extractPoint(elements)
-  id = str2double(elements{2});
-  land_id = str2double(elements{3});
-  x_p = str2double(elements{4});
-  y_p = str2double(elements{5});
-  out = observation(id,land_id, [x_p; y_p]);
-end
-function [observations] = loadmeas(filepath)
-  fid = fopen(filepath, 'r');
-  i_vert_xy = 0;
-  curr_id = -1;
-  point = 'point';
-  observations = [];
-  while true
-  %get current line
-  c_line = fgetl(fid);
-
-  %stop if EOF
-  if c_line == -1
-    break;
-  endif
-  
-  %Split the line using space as separator
-  elements = strsplit(c_line,' ');
-  switch(elements{1})
-    case point
-      current_obs = extractPoint(elements);
-      if exist('observations')			
-        if current_obs.pose_id == curr_id
-          observations(end).observation = [observations(end).observation; current_obs.observation]; 
-        else
-          observations = [observations; current_obs];
-          curr_id = observations(end).pose_id;
-        end
-      else
-        if current_obs.pose_id == curr_id
-          observations(1).observation(2) = current_obs.observation;
-        else
-            observations(2) = current_obs;
-          curr_id = observations(1).pose_id;
-        end
-      endif
-    end
-  end
   
 end
-function [is_behind, z_hat] = project(Xr, Xl, K)
-  p_camera_frame = Xr(1:3,1:3) * Xl + Xr(1:3,4);
-  p_projected = K * p_camera_frame;
-  is_behind = true;
-  z_hat = [-1;-1];
-  if(p_camera_frame(3) > 0)
-    z_hat = p_projected(1:2)/p_projected(3);
-    is_behind = false;
-  endif
-endfunction
-function out = v2T(v)
-	out = [cos(v(3)) -sin(v(3)) 0 v(1); sin(v(3)) cos(v(3))  0 v(2); 0 0 0 0; 0 0 0 1];
-	  
-endfunction
-
-function out = landmark(varargin)
+function out = landmark2D(varargin)
   %There is always an id
   out.id = varargin{1}; %id
   Nvarargin = length(varargin);
@@ -639,6 +476,22 @@ function out = landmark(varargin)
   end  
 
 end
+function out = observation(from_id, land_id, obs)
+  out.pose_id = from_id;
+  out.observation = landmark2D(land_id, obs);
+end
+function out = extractPoint(elements)
+  id = str2double(elements{2});
+  land_id = str2double(elements{3});
+  x_p = str2double(elements{4});
+  y_p = str2double(elements{5});
+  out = observation(id,land_id, [x_p; y_p]);
+end
+
+
+
+
+
 %qua comincia lo slam leggendo la trajectory
 function out = extractTransition(elements)
   id = str2double(elements{2});
@@ -688,25 +541,15 @@ end
 
 
 
-function out = observation(from_id, land_id, obs)
-  out.pose_id = from_id;
-  out.observation = landmark(land_id, obs);
-end
-function out = extractPoint(elements)
-  id = str2double(elements{2});
-  land_id = str2double(elements{3});
-  x_p = str2double(elements{4});
-  y_p = str2double(elements{5});
-  out = observation(id,land_id, [x_p; y_p]);
-end
 curr_id = -1;
-function [observations] = loadmeas(filepath)
+function [observations,fid] = loadmeas(filepath)
     fid = fopen(filepath, 'r');
     i_vert_xy = 0;
     curr_id = -1;
     point = 'point';
     observations = [];
     while true
+
 		%get current line
 		c_line = fgetl(fid);
 
